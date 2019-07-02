@@ -1,0 +1,18 @@
+
+Three-dimensional elevation models
+
+https://ecosystems.psu.edu/research/labs/walter-lab/manual/chapter-6-three-dimensional-analysis/6.2-three-dimensional-exploration-of-digital-elevation-models-dems
+
+
+3D elevation visualization with R rayshader 
+
+https://github.com/tylermorganwall/rayshader
+
+Digital Elevation model visualization with psu 
+
+https://ecosystems.psu.edu/research/labs/walter-lab/manual/chapter-6-three-dimensional-analysis/6.2-three-dimensional-exploration-of-digital-elevation-models-dems
+
+R Spatial Project For Resources 
+
+https://cran.r-project.org/web/views/Spatial.html
+

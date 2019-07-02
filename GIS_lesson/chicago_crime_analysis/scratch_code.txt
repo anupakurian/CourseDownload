@@ -1,0 +1,44 @@
+```{r}
+ymin <- min(chicago_crime$`Y Coordinate`)
+ymax <- max(chicago_crime$`Y Coordinate`)
+xmin <- min(chicago_crime$`X Coordinate`)
+xmax <- max(chicago_crime$`X Coordinate`)
+```
+```{r}
+chicago_crime_window <- owin(xrange=c(xmin, xmax), yrange=c(ymin, ymax))
+```
+
+```{r}
+
+chicago_crime_ppp <- ppp(x = chicago_crime$`X Coordinate`, y = chicago_crime$`Y Coordinate`, window = chicago_crime_window, marks = chicago_crime$violent)
+```
+
+```{r}
+# Scan from 500m to 1000m in steps of 50m
+bw_choice <- spseg(
+    chicago_crime_ppp, 
+    h = seq(500, 1000, by = 50),
+    opt = 1)
+
+# Plot the results and highlight the best bandwidth
+plotcv(bw_choice); abline(v = bw_choice$hcv, lty = 2, col = "red")
+
+# Print the best bandwidth
+print(bw_choice$hcv)
+```
+```{r}
+# Set the correct bandwidth and run for 10 simulations only
+seg10 <- spseg(
+    pts = chicago_crime_ppp, 
+    h = bw_choice$hcv,
+    opt = 3,
+    ntest = 10, 
+    proc = FALSE)
+
+# Plot the segregation map for violent crime
+plotmc(seg10, "Violent crime")
+```
+
+```{r}
+crime_beat_agg <- aggregate(. ~ crime_beats$beat_num, data = crime_beats, FUN = function(x) c(violent_crime_per_beat = (x), crime_per_beat = length(x)))
+```

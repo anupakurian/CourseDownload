@@ -1,0 +1,207 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+# load libraries
+
+library("spatstat")
+library("tidyverse")
+library("ggmap")
+library("spatialkernel")
+library("sp")
+library("sf")
+library("spdep")
+library("raster")
+library("plotly")
+library("leaflet")
+
+
+```
+
+```{r}
+
+read_chicago_crime <- read_csv("chicago_crime_2014_2019.csv")
+  
+
+
+
+```
+
+```{r}
+chicago_crime <- read_chicago_crime
+```
+
+```{r}
+chicago_crime <- subset(chicago_crime, Year == 2017)
+```
+
+```{r}
+chicago_crime
+```
+
+```{r}
+chicago_crime <- na.omit(chicago_crime)
+```
+
+```{r}
+chicago_crime <- chicago_crime[c("Primary Type", "Latitude", "Longitude", "X Coordinate", "Y Coordinate")]
+unique(chicago_crime$`Primary Type`)
+
+```
+```{r}
+incident_bool <- rep(0, nrow(chicago_crime))
+violent_crimes <- c("BATTERY", "ASSAULT", "CRIM SEXUAL ASSAULT", "ARSON", "SEX OFFENSE", "HUMAN TRAFFICKING", "HOMICIDE", "KIDNAPPING")
+```
+```{r}
+chicago_crime$violent <- incident_bool
+chicago_crime$violent[chicago_crime$`Primary Type` %in% violent_crimes] <- 1
+chicago_crime
+```
+
+```{r}
+chicago_crime_spatial <- st_as_sf(chicago_crime, coords = c("Longitude", "Latitude"), crs = 4326)
+chicago_crime_spatial
+```
+
+
+
+
+```{r}
+chicago_beats <- st_read("geo_export_28bd96cb-5d5f-49d3-8588-c38060fa6e9c.shp")
+```
+
+
+```{r}
+chicago_beats
+```
+
+```{r}
+plot(chicago_beats)
+```
+
+```{r}
+plot(chicago_beats[2])
+```
+
+```{r}
+st_join(chicago_crime_spatial, chicago_beats, join = st_contains)
+```
+
+```{r}
+st_crs(chicago_beats)
+```
+
+```{r}
+st_crs(chicago_crime_spatial)
+```
+
+```{r}
+chicago_beats <- st_transform(chicago_beats, crs = "+proj=longlat +datum=WGS84 +no_defs")
+```
+
+```{r}
+st_crs(chicago_beats)
+```
+
+```{r}
+crime_beats <- st_join(chicago_beats, chicago_crime_spatial, join = st_contains)
+```
+
+
+```{r}
+violent_crime_per_beat <- aggregate(crime_beats$violent, by = list(crime_beats$beat_num), FUN = sum)
+violent_crime_per_beat
+```
+
+
+```{r}
+
+tot_crime_per_beat <- aggregate(crime_beats$violent, by = list(crime_beats$beat_num), FUN = length)
+tot_crime_per_beat 
+
+```
+
+```{r}
+crime_per_beat <- merge(tot_crime_per_beat, violent_crime_per_beat, by = 'Group.1')
+
+```
+```{r}
+crime_per_beat
+```
+
+```{r}
+crime_per_beat$violent_pct <- crime_per_beat$x.y / crime_per_beat$x.x
+```
+```{r}
+crime_per_beat <- merge(chicago_beats, crime_per_beat, by.x = "beat_num", by.y = "Group.1")
+crime_per_beat
+```
+
+
+```{r}
+
+m <- leaflet() %>%
+             setView(-87.6298, 41.8781, 10) %>% 
+             addTiles()
+```
+
+```{r}
+m
+```
+
+```{r}
+mypalette = colorNumeric(palette="RdYlGn", domain = crime_per_beat$violent_pct, na.color="transparent")
+```
+
+
+```{r}
+m %>% addPolygons(data = crime_per_beat, fillColor = ~mypalette(violent_pct), stroke=FALSE, fillOpacity = 0.9)
+```
+
+```{r}
+beats_neighbors <- na.omit(beats_neighbors)
+crime_per_beat <- na.omit(crime_per_beat)
+```
+
+```{r}
+beats_neighbors <- poly2nb(crime_per_beat)
+beats_neighbors
+```
+
+
+
+
+```{r}
+beats_neighbors[3]
+```
+
+
+
+
+```{r}
+moran.test(
+  crime_per_beat$violent_pct, 
+  nb2listw(beats_neighbors)
+)
+```
+
+
+
+
+
+
+
+
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
